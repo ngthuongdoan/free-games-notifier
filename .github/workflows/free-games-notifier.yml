@@ -2,7 +2,7 @@ name: Free Games Notifier
 
 on:
   schedule:
-    - cron: "17 1 * * *"
+    - cron: "0 2 * * *"
   workflow_dispatch:
 
 jobs:
