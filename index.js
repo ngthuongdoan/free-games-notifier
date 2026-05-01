@@ -12,6 +12,57 @@ const REQUEST_TIMEOUT_MS = Number(process.env.REQUEST_TIMEOUT_MS || 30000);
 const RETRY_COUNT = Number(process.env.RETRY_COUNT || 3);
 const RETRY_DELAY_MS = Number(process.env.RETRY_DELAY_MS || 5000);
 
+function stripWrappingQuotes(value) {
+  if (typeof value !== "string") return "";
+
+  const trimmed = value.trim();
+
+  if (
+    trimmed.length >= 2 &&
+    ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'")))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
+function normalizeEmailAddress(value, fallback) {
+  const candidate = stripWrappingQuotes(value);
+  const match = candidate.match(/^(.*)<([^<>@\s]+@[^<>@\s]+)>$/);
+
+  if (match) {
+    const name = match[1].trim().replace(/^["']|["']$/g, "");
+    const address = match[2].trim();
+
+    return {
+      headerFrom: name ? `${name} <${address}>` : address,
+      envelopeFrom: address,
+    };
+  }
+
+  if (/^[^@\s]+@[^@\s]+$/.test(candidate)) {
+    return {
+      headerFrom: candidate,
+      envelopeFrom: candidate,
+    };
+  }
+
+  const fallbackAddress = stripWrappingQuotes(fallback);
+
+  if (/^[^@\s]+@[^@\s]+$/.test(fallbackAddress)) {
+    return {
+      headerFrom: fallbackAddress,
+      envelopeFrom: fallbackAddress,
+    };
+  }
+
+  throw new Error(
+    "Unable to determine a valid sender email address from EMAIL_FROM or SMTP_USER."
+  );
+}
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -241,10 +292,8 @@ function createEmailText({ epicGames, steamGames, checkedAt }) {
   ].join("\n");
 }
 
-async function sendEmail({ epicGames, steamGames }) {
-  const checkedAt = new Date().toISOString();
-
-  const transporter = nodemailer.createTransport({
+function createTransporter() {
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT || 465),
     secure: process.env.SMTP_SECURE === "true",
@@ -253,11 +302,24 @@ async function sendEmail({ epicGames, steamGames }) {
       pass: process.env.SMTP_PASS,
     },
   });
+}
+
+async function sendEmail({ epicGames, steamGames }) {
+  const checkedAt = new Date().toISOString();
+  const transporter = createTransporter();
+  const sender = normalizeEmailAddress(
+    process.env.EMAIL_FROM,
+    process.env.SMTP_USER
+  );
 
   const subject = `Free Games Update: Epic ${epicGames.length}, Steam ${steamGames.length}`;
 
   await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: sender.headerFrom,
+    envelope: {
+      from: sender.envelopeFrom,
+      to: process.env.EMAIL_TO,
+    },
     to: process.env.EMAIL_TO,
     subject,
     text: createEmailText({ epicGames, steamGames, checkedAt }),
@@ -286,29 +348,36 @@ async function main() {
   console.log("Done. Email sent.");
 }
 
-main().catch(async (error) => {
-  console.error("Job failed:", error);
+if (require.main === module) {
+  main().catch(async (error) => {
+    console.error("Job failed:", error);
 
-  try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 465),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+    try {
+      const transporter = createTransporter();
+      const sender = normalizeEmailAddress(
+        process.env.EMAIL_FROM,
+        process.env.SMTP_USER
+      );
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM,
-      to: process.env.EMAIL_TO,
-      subject: "Free Games Job Failed",
-      text: `The free games job failed.\n\nError:\n${error.stack || error.message}`,
-    });
-  } catch (emailError) {
-    console.error("Failed to send failure email:", emailError);
-  }
+      await transporter.sendMail({
+        from: sender.headerFrom,
+        envelope: {
+          from: sender.envelopeFrom,
+          to: process.env.EMAIL_TO,
+        },
+        to: process.env.EMAIL_TO,
+        subject: "Free Games Job Failed",
+        text: `The free games job failed.\n\nError:\n${error.stack || error.message}`,
+      });
+    } catch (emailError) {
+      console.error("Failed to send failure email:", emailError);
+    }
 
-  process.exit(1);
-});
+    process.exit(1);
+  });
+}
+
+module.exports = {
+  normalizeEmailAddress,
+  stripWrappingQuotes,
+};
