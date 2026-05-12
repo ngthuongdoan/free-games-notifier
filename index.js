@@ -1,6 +1,6 @@
 require("dotenv").config();
 const nodemailer = require("nodemailer");
-
+const ejs = require("ejs");
 const EPIC_FREE_GAMES_URL =
   "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=vi-VN&country=VN&allowCountries=VN";
 
@@ -206,7 +206,7 @@ function formatPrice(game) {
   return "Free";
 }
 
-function createEmailHtml({ epicGames, steamGames, checkedAt }) {
+async function createEmailHtml({ epicGames, steamGames, checkedAt }) {
   const allGames = [...epicGames, ...steamGames];
 
   if (allGames.length === 0) {
@@ -217,47 +217,12 @@ function createEmailHtml({ epicGames, steamGames, checkedAt }) {
     `;
   }
 
-  const rows = allGames
-    .map(
-      (game) => `
-        <tr>
-          <td>${game.store}</td>
-          <td>
-            <strong>${game.title}</strong><br />
-            <a href="${game.url}">${game.url}</a>
-          </td>
-          <td>${formatPrice(game)}</td>
-          <td>${game.endDate || "Unknown"}</td>
-        </tr>
-      `
-    )
-    .join("");
 
-  return `
-    <h2>Free Games Update</h2>
-    <p>Checked at: ${checkedAt}</p>
-
-    <h3>Summary</h3>
-    <ul>
-      <li>Epic Games Store: ${epicGames.length}</li>
-      <li>Steam: ${steamGames.length}</li>
-      <li>Total: ${allGames.length}</li>
-    </ul>
-
-    <table border="1" cellpadding="8" cellspacing="0">
-      <thead>
-        <tr>
-          <th>Store</th>
-          <th>Game</th>
-          <th>Price</th>
-          <th>Ends At</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
+  return await ejs.renderFile(__dirname + "/template.ejs", {
+    epicGames,
+    steamGames,
+    checkedAt: new Date().toISOString(),
+  });
 }
 
 function createEmailText({ epicGames, steamGames, checkedAt }) {
@@ -313,6 +278,7 @@ async function sendEmail({ epicGames, steamGames }) {
   );
 
   const subject = `Free Games Update: Epic ${epicGames.length}, Steam ${steamGames.length}`;
+  const html = await createEmailHtml({ epicGames, steamGames, checkedAt })
 
   await transporter.sendMail({
     from: sender.headerFrom,
@@ -323,7 +289,7 @@ async function sendEmail({ epicGames, steamGames }) {
     to: process.env.EMAIL_TO,
     subject,
     text: createEmailText({ epicGames, steamGames, checkedAt }),
-    html: createEmailHtml({ epicGames, steamGames, checkedAt }),
+    html
   });
 }
 
