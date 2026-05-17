@@ -3,23 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Free Games Update</title>
+  <title>Games Update</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0b1020;font-family:Arial,Helvetica,sans-serif;color:#ffffff;">
   <%
-    const allGames = [...(epicGames || []), ...(steamGames || [])];
+    const freeGames = [...(epicGames || []), ...(steamGames || [])];
+    const deals = steamDiscountGames || [];
     const safeCheckedAt = checkedAt || new Date().toLocaleDateString();
 
-    function formatGamePrice(game) {
-      if (game.store === "Epic Games Store") {
-        return `${game.originalPrice || "Unknown"} → ${game.discountPrice || "Free"}`;
-      }
+    const safeFormatDate = typeof formatDate === "function"
+      ? formatDate
+      : (value) => value || "Unknown";
 
-      if (game.currency && typeof game.originalPrice === "number") {
-        return `${game.originalPrice} ${game.currency} → 0 ${game.currency}`;
-      }
+    const safeFormatPrice = typeof formatPrice === "function"
+      ? formatPrice
+      : (game) => `${game.originalPrice || "Unknown"} → ${game.discountPrice || "Free"}`;
 
-      return "Free";
+    const safeFormatVnd = typeof formatVnd === "function"
+      ? formatVnd
+      : (value) => `${value} VND`;
+
+    function renderCard(game, description, buttonText) {
+  %>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;background:#19233f;border:1px solid #2b3a63;border-radius:18px;overflow:hidden;">
+      <tr>
+        <% if (game.image) { %>
+          <td width="220" valign="top">
+            <img
+              src="<%= game.image %>"
+              alt="<%= game.title %>"
+              width="220"
+              style="display:block;width:100%;max-width:220px;height:auto;border:0;"
+            />
+          </td>
+        <% } %>
+
+        <td valign="top" style="padding:22px;">
+          <div style="display:inline-block;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:bold;padding:6px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:1px;">
+            <%= game.store %><%= game.discountPercent ? ` · -${game.discountPercent}%` : "" %>
+          </div>
+
+          <h3 style="margin:14px 0 10px;font-size:26px;line-height:32px;color:#ffffff;">
+            <%= game.title %>
+          </h3>
+
+          <p style="margin:0 0 14px;font-size:15px;line-height:24px;color:#cbd5e1;">
+            <%= description %>
+          </p>
+
+          <div style="margin-bottom:16px;">
+            <span style="font-size:14px;color:#94a3b8;">Price:</span>
+            <span style="font-size:18px;font-weight:bold;color:#4ade80;">
+              <%= safeFormatPrice(game) %>
+            </span>
+          </div>
+
+          <div style="margin-bottom:24px;font-size:14px;color:#fca5a5;">
+            Ends: <%= safeFormatDate(game.endDate) %>
+          </div>
+
+          <a
+            href="<%= game.url %>"
+            style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:12px;font-size:15px;"
+          >
+            <%= buttonText %> →
+          </a>
+        </td>
+      </tr>
+    </table>
+  <%
     }
   %>
 
@@ -34,12 +86,12 @@
                 DAILY GAME DROP
               </div>
 
-              <h1 style="margin:16px 0 10px;font-size:38px;line-height:42px;color:#ffffff;">
-                🎮 Free Games Alert
+              <h1 style="margin:16px 0 10px;font-size:36px;line-height:42px;color:#ffffff;">
+                🎮 Free Games & Steam Deals
               </h1>
 
               <p style="margin:0;font-size:16px;line-height:26px;color:#e0f2fe;">
-                New free games from Steam and Epic Games Store.
+                Free games plus Steam discounts under <%= safeFormatVnd(steamMaxPriceVnd || 200000) %>.
               </p>
             </td>
           </tr>
@@ -51,7 +103,7 @@
                   <td width="33.33%" style="padding:8px;">
                     <div style="background:#19233f;border:1px solid #2b3a63;border-radius:14px;padding:18px;text-align:center;">
                       <div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">
-                        Epic Games
+                        Epic Free
                       </div>
                       <div style="margin-top:10px;font-size:32px;font-weight:bold;color:#38bdf8;">
                         <%= (epicGames || []).length %>
@@ -62,7 +114,7 @@
                   <td width="33.33%" style="padding:8px;">
                     <div style="background:#19233f;border:1px solid #2b3a63;border-radius:14px;padding:18px;text-align:center;">
                       <div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">
-                        Steam
+                        Steam Free
                       </div>
                       <div style="margin-top:10px;font-size:32px;font-weight:bold;color:#a78bfa;">
                         <%= (steamGames || []).length %>
@@ -73,10 +125,10 @@
                   <td width="33.33%" style="padding:8px;">
                     <div style="background:#19233f;border:1px solid #2b3a63;border-radius:14px;padding:18px;text-align:center;">
                       <div style="font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">
-                        Total
+                        Steam Deals
                       </div>
                       <div style="margin-top:10px;font-size:32px;font-weight:bold;color:#4ade80;">
-                        <%= allGames.length %>
+                        <%= deals.length %>
                       </div>
                     </div>
                   </td>
@@ -86,12 +138,12 @@
           </tr>
 
           <tr>
-            <td style="padding:20px 32px 40px;">
+            <td style="padding:20px 32px 24px;">
               <h2 style="margin:0 0 20px;font-size:24px;color:#ffffff;">
-                Available Right Now
+                Free Games
               </h2>
 
-              <% if (allGames.length === 0) { %>
+              <% if (freeGames.length === 0) { %>
                 <div style="background:#19233f;border:1px solid #2b3a63;border-radius:18px;padding:28px;text-align:center;">
                   <div style="font-size:34px;line-height:40px;margin-bottom:12px;">🕹️</div>
                   <h3 style="margin:0 0 10px;font-size:24px;color:#ffffff;">
@@ -103,57 +155,29 @@
                 </div>
               <% } %>
 
-              <% allGames.forEach((game) => { %>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:20px;background:#19233f;border:1px solid #2b3a63;border-radius:18px;overflow:hidden;">
-                  <tr>
-                    <% if (game.image) { %>
-                      <td width="220" valign="top">
-                        <img
-                          src="<%= game.image %>"
-                          alt="<%= game.title %>"
-                          width="220"
-                          style="display:block;width:100%;max-width:220px;height:auto;border:0;"
-                        />
-                      </td>
-                    <% } %>
+              <% freeGames.forEach((game) => renderCard(game, "Limited-time free game promotion.", "Claim Now")) %>
+            </td>
+          </tr>
 
-                    <td valign="top" style="padding:22px;">
-                      <div style="display:inline-block;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:bold;padding:6px 10px;border-radius:999px;text-transform:uppercase;letter-spacing:1px;">
-                        <%= game.store %>
-                      </div>
+          <tr>
+            <td style="padding:0 32px 40px;">
+              <h2 style="margin:0 0 20px;font-size:24px;color:#ffffff;">
+                Steam Discounts Under <%= safeFormatVnd(steamMaxPriceVnd || 200000) %>
+              </h2>
 
-                      <h3 style="margin:14px 0 10px;font-size:28px;line-height:34px;color:#ffffff;">
-                        <%= game.title %>
-                      </h3>
+              <% if (deals.length === 0) { %>
+                <div style="background:#19233f;border:1px solid #2b3a63;border-radius:18px;padding:28px;text-align:center;">
+                  <div style="font-size:34px;line-height:40px;margin-bottom:12px;">💸</div>
+                  <h3 style="margin:0 0 10px;font-size:24px;color:#ffffff;">
+                    No matching Steam deals found
+                  </h3>
+                  <p style="margin:0;font-size:15px;line-height:24px;color:#cbd5e1;">
+                    No discounted Steam games under your configured price cap were found.
+                  </p>
+                </div>
+              <% } %>
 
-                      <p style="margin:0 0 14px;font-size:15px;line-height:24px;color:#cbd5e1;">
-                        Limited-time free game promotion.
-                      </p>
-
-                      <div style="margin-bottom:16px;">
-                        <span style="font-size:14px;color:#94a3b8;">
-                          Price:
-                        </span>
-
-                        <span style="font-size:18px;font-weight:bold;color:#4ade80;">
-                          <%= formatGamePrice(game) %>
-                        </span>
-                      </div>
-
-                      <div style="margin-bottom:24px;font-size:14px;color:#fca5a5;">
-                        Ends: <%= game.endDate || "Unknown" %>
-                      </div>
-
-                      <a
-                        href="<%= game.url %>"
-                        style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#ffffff;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:12px;font-size:15px;"
-                      >
-                        Claim Now →
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-              <% }) %>
+              <% deals.forEach((game) => renderCard(game, "Discounted Steam game under your configured budget.", "View Deal")) %>
             </td>
           </tr>
 
@@ -164,7 +188,7 @@
               </div>
 
               <div style="margin-top:8px;font-size:12px;color:#64748b;line-height:20px;">
-                Automated free games notifier powered by Steam & Epic APIs.
+                Automated games notifier powered by Steam & Epic APIs.
               </div>
             </td>
           </tr>
