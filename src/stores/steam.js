@@ -15,6 +15,21 @@ const {
 
 function normalizeSteamPrice(rawPrice) {
   const price = parseNumber(rawPrice);
+
+  if (price === null) return null;
+
+  // Steam API/search prices are commonly returned in the currency's minor unit.
+  // For VN store pages, 188,000₫ can appear as 18800000.
+  // Convert obvious minor-unit VND values back to display/filter VND values.
+  if (price > 1000000) {
+    return Math.round(price / 100);
+  }
+
+  return price;
+}
+
+function normalizeDisplayedSteamPrice(rawPrice) {
+  const price = parseNumber(rawPrice);
   return price === null ? null : price;
 }
 
@@ -70,7 +85,7 @@ function parseSteamSearchRows(html) {
         /<div[^>]*class="[^"]*discount_final_price[^"]*"[^>]*>([\s\S]*?)<\/div>/i
       );
 
-      const parsedFinalFromText = parseNumber(finalText);
+      const parsedFinalFromText = normalizeDisplayedSteamPrice(finalText);
       const discountPrice = finalPrice ?? parsedFinalFromText;
 
       if (!title || !url) return null;
@@ -82,7 +97,7 @@ function parseSteamSearchRows(html) {
         appId,
         url,
         image,
-        originalPrice: parseNumber(originalText),
+        originalPrice: normalizeDisplayedSteamPrice(originalText),
         discountPrice,
         currency: "VND",
         discountPercent,
@@ -172,5 +187,6 @@ module.exports = {
   fetchSteamDeals,
   fetchSteamFreeGames,
   fetchSteamDiscountGames,
+  normalizeSteamPrice,
   parseSteamSearchRows,
 };
