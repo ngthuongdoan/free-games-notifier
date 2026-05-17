@@ -221,7 +221,7 @@ async function createEmailHtml({ epicGames, steamGames, checkedAt }) {
   return await ejs.renderFile(__dirname + "/template.ejs", {
     epicGames,
     steamGames,
-    checkedAt: new Date().toISOString(),
+    checkedAt: new Date().toLocaleDateString(),
   });
 }
 
@@ -250,7 +250,7 @@ function createEmailText({ epicGames, steamGames, checkedAt }) {
         `${game.store}: ${game.title}`,
         `URL: ${game.url}`,
         `Price: ${formatPrice(game)}`,
-        `Ends At: ${game.endDate || "Unknown"}`,
+        `Ends At: ${game.endDate.toLocaleDateString() || "Unknown"}`,
         "",
       ].join("\n")
     ),
