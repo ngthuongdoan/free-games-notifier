@@ -6,6 +6,20 @@ const { STEAM_MAX_PRICE_VND } = require("./config");
 const { formatDate, formatPrice, formatVnd } = require("./format");
 const { stripWrappingQuotes } = require("./utils");
 
+// Import the email list service to support dynamic recipient groups. This allows
+// us to send notifications to different groups of users based on the type of
+// notification being sent.
+const { getRecipientsByListName } = require("./emailListService");
+
+// Default list names used when no environment variable overrides are provided.
+// EMAIL_LIST_NAME controls who receives regular game update notifications.
+// ADMIN_EMAIL_LIST_NAME controls who receives failure notifications. These can
+// be overridden via environment variables.
+const DEFAULT_LIST_NAME =
+  process.env.EMAIL_LIST_NAME || "daily-free-games";
+const ADMIN_LIST_NAME =
+  process.env.ADMIN_EMAIL_LIST_NAME || "admin-alerts";
+
 function normalizeEmailAddress(value, fallback) {
   const candidate = stripWrappingQuotes(value);
   const match = candidate.match(/^(.*)<([^<>@\s]+@[^<>@\s]+)>$/);
@@ -142,13 +156,17 @@ async function sendEmail({ epicGames, steamGames, steamDiscountGames }) {
     checkedAt,
   });
 
+  // Look up the list of recipients for regular game updates. This makes it
+  // possible to manage subscriber groups via a simple JSON configuration.
+  const recipients = await getRecipientsByListName(DEFAULT_LIST_NAME);
+
   await transporter.sendMail({
     from: sender.headerFrom,
     envelope: {
       from: sender.envelopeFrom,
-      to: process.env.EMAIL_TO,
+      to: recipients,
     },
-    to: process.env.EMAIL_TO,
+    to: recipients,
     subject,
     text: createEmailText({
       epicGames,
@@ -167,13 +185,17 @@ async function sendFailureEmail(error) {
     process.env.SMTP_USER
   );
 
+  // Look up the list of recipients for admin/failure alerts. Admins can
+  // configure this list separately from regular subscribers.
+  const recipients = await getRecipientsByListName(ADMIN_LIST_NAME);
+
   await transporter.sendMail({
     from: sender.headerFrom,
     envelope: {
       from: sender.envelopeFrom,
-      to: process.env.EMAIL_TO,
+      to: recipients,
     },
-    to: process.env.EMAIL_TO,
+    to: recipients,
     subject: "Games Job Failed",
     text: `The games job failed.\n\nError:\n${error.stack || error.message}`,
   });

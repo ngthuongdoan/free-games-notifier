@@ -31,7 +31,8 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          # Recipients for the notifier are configured via JSON (see src/data/email-lists.json).
+          # Remove the EMAIL_TO secret; the application uses default recipient lists.
           STARTUP_DELAY_MS: "0"
           REQUEST_TIMEOUT_MS: "30000"
           RETRY_COUNT: "3"
