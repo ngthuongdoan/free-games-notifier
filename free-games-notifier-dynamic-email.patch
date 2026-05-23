@@ -1,0 +1,121 @@
+*** Begin Patch
+*** Add File: src/data/email-lists.json
++{
++  "daily-free-games": [
++    "user1@example.com",
++    "user2@example.com"
++  ],
++  "admin-alerts": [
++    "contact@thuongda.dev"
++  ]
++}
+*** End Patch
+*** Begin Patch
+*** Add File: src/emailListService.js
++const fs = require("fs");
++const path = require("path");
++
++/**
++ * Reads and parses the email lists JSON file.
++ *
++ * @returns {Object} an object mapping list names to arrays of addresses
++ */
++function getEmailLists() {
++  const filePath = path.join(__dirname, "data", "email-lists.json");
++  const raw = fs.readFileSync(filePath, "utf8");
++  return JSON.parse(raw);
++}
++
++/**
++ * Returns the list of recipients for the given list name.
++ *
++ * @param {string} listName Name of the email list to retrieve.
++ * @returns {string[]} array of email addresses
++ * @throws {Error} if the list is undefined or empty
++ */
++function getRecipientsByListName(listName) {
++  const lists = getEmailLists();
++  const recipients = lists[listName];
++  if (!Array.isArray(recipients) || recipients.length === 0) {
++    throw new Error(`Email list "${listName}" has no recipients`);
++  }
++  return recipients;
++}
++
++module.exports = {
++  getEmailLists,
++  getRecipientsByListName,
++};
+*** End Patch
+*** Begin Patch
+*** Update File: src/email.js
+@@
+-const { formatDate, formatPrice, formatVnd } = require("./format");
+-const { stripWrappingQuotes } = require("./utils");
++const { formatDate, formatPrice, formatVnd } = require("./format");
++const { stripWrappingQuotes } = require("./utils");
++const { getRecipientsByListName } = require("./emailListService");
+@@ async function sendEmail({ epicGames, steamGames, steamDiscountGames }) {
+-  await transporter.sendMail({
+-    from: sender.headerFrom,
+-    envelope: {
+-      from: sender.envelopeFrom,
+-      to: process.env.EMAIL_TO,
+-    },
+-    to: process.env.EMAIL_TO,
+-    subject,
+-    text: createEmailText({
+-      epicGames,
+-      steamGames,
+-      steamDiscountGames,
+-      checkedAt,
+-    }),
+-    html,
+-  });
++  // Determine which recipient list to use for the normal notifications.
++  // Fallback to "daily-free-games" if no list name is provided.
++  const listName = process.env.EMAIL_LIST_NAME || "daily-free-games";
++  const recipients = getRecipientsByListName(listName);
++
++  await transporter.sendMail({
++    from: sender.headerFrom,
++    envelope: {
++      from: sender.envelopeFrom,
++      to: recipients,
++    },
++    to: recipients,
++    subject,
++    text: createEmailText({
++      epicGames,
++      steamGames,
++      steamDiscountGames,
++      checkedAt,
++    }),
++    html,
++  });
+@@ async function sendFailureEmail(error) {
+-  await transporter.sendMail({
+-    from: sender.headerFrom,
+-    envelope: {
+-      from: sender.envelopeFrom,
+-      to: process.env.EMAIL_TO,
+-    },
+-    to: process.env.EMAIL_TO,
+-    subject: "Games Job Failed",
+-    text: `The games job failed.\n\nError:\n${error.stack || error.message}`,
+-  });
++  // Use the admin alerts list for failure notifications.
++  const listName = process.env.ADMIN_EMAIL_LIST_NAME || "admin-alerts";
++  const recipients = getRecipientsByListName(listName);
++
++  await transporter.sendMail({
++    from: sender.headerFrom,
++    envelope: {
++      from: sender.envelopeFrom,
++      to: recipients,
++    },
++    to: recipients,
++    subject: "Games Job Failed",
++    text: `The games job failed.\n\nError:\n${error.stack || error.message}`,
++  });
+*** End Patch
