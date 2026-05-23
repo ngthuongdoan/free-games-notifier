@@ -1,0 +1,87 @@
+name: Free Games Notifier
+
+# This workflow notifies subscribers about free games available on stores such as Epic and Steam.
+# It runs on a schedule every day at 02:00 UTC and can also be triggered manually via the GitHub
+# Actions interface. When triggered manually, only the repository owner can run it, and they can
+# choose whether the run should be treated as production (default) or development.
+#
+# - Production runs (from the schedule or manual with `environment=prod`) send emails to the
+#   `daily-free-games` list. The notifier will also send failure alerts to the `admin-alerts` list.
+# - Development runs (manual with `environment=dev`) send emails only to the `dev-users` list,
+#   which should be empty by default and populated with your own test addresses. This prevents
+#   spamming real subscribers during testing.
+#
+# The workflow restricts manual dispatch to the repository owner (`ngthuongdoan`) to avoid
+# unauthorized runs. SMTP credentials are stored as secrets. You must provide the following secrets:
+#   - SMTP_HOST: SMTP server hostname (e.g. mail.example.com)
+#   - SMTP_PORT: SMTP server port (e.g. 465)
+#   - SMTP_SECURE: 'true' if using TLS/SSL, else 'false'
+#   - SMTP_USER: SMTP username
+#   - SMTP_PASS: SMTP password
+#   - EMAIL_FROM: From address used when sending emails
+#
+on:
+  schedule:
+    # Run every day at 02:00 UTC
+    - cron: "0 2 * * *"
+  # Allow the workflow to be triggered manually. The actor must be the repository owner to run.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Notification environment (prod or dev)"
+        required: false
+        default: prod
+        type: choice
+        options:
+          - prod
+          - dev
+
+jobs:
+  notify:
+    # Only run if triggered on schedule or manually by the repository owner. Prevents others from
+    # manually running the workflow.
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.actor == 'ngthuongdoan') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      # Install project dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Determine which mailing list to use for manual runs. For manual dispatch with environment=dev,
+      # set the EMAIL_LIST_NAME to `dev-users` so notifications go only to the development list. For
+      # production or scheduled runs, do not override EMAIL_LIST_NAME — the notifier defaults to
+      # `daily-free-games` for regular updates.
+      - name: Select mailing list based on environment
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "Using dev environment: setting EMAIL_LIST_NAME=dev-users"
+            echo "EMAIL_LIST_NAME=dev-users" >> $GITHUB_ENV
+          else
+            echo "Using prod environment: no override of EMAIL_LIST_NAME (defaults to daily-free-games)"
+          fi
+
+      # Run the notifier script. The notifier reads SMTP credentials and email list names from the
+      # environment. If EMAIL_LIST_NAME is not provided, it falls back to the default list defined
+      # in src/data/email-lists.json (daily-free-games). Failure notifications always go to the
+      # `admin-alerts` list defined in the same JSON file.
+      - name: Run free games notifier
+        run: npm start
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
