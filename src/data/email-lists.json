@@ -1,11 +1,13 @@
 {
   "daily-free-games": [
-    "ngthuongdoan@gmail.com",
     "dthitk@gmail.com"
   ],
   "weekly-summary": [
   ],
   "admin-alerts": [
     "contact@thuongda.dev"
+  ],
+  "dev-users": [
+    "ngthuongdoan@gmail.com"
   ]
 }

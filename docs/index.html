@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subscribe to Free Games Notifier</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 20px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+    h1 {
+      margin-top: 0;
+      color: #343a40;
+    }
+    p {
+      color: #6c757d;
+      line-height: 1.6;
+    }
+    input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 4px;
+      background-color: #007bff;
+      color: #ffffff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .note {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Subscribe to Free Games Notifier</h1>
+    <p>Enter your email address to receive notifications whenever we find free or discounted games. Your email will be added to our subscribers list.</p>
+    <!--
+      This form uses the mailto scheme to send a subscription request to the repository owner.
+      Replace the "your.email@example.com" below with your own email address.
+      When a user submits this form, their email client will open a new message to your address
+      with their subscription request, so you can manually add them to the JSON file.
+    -->
+    <form action="mailto:your.email@example.com?subject=Free%20Games%20Notifier%20Subscription" method="post" enctype="text/plain">
+      <input type="email" name="email" placeholder="Your email address" required>
+      <button type="submit">Subscribe</button>
+    </form>
+    <div class="note">
+      <p>If the form doesn't open your email client, please send an email directly to <strong>your.email@example.com</strong> with the subject <em>Free Games Notifier Subscription</em> and include your email address in the body.</p>
+      <p><strong>Privacy:</strong> We do not share your email address with third parties. It will only be used for game notifications.</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,39 +1,35 @@
-name: Free Games Notifier
-
 on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      environment:
+        description: "Notification environment (prod or dev)"
+        required: false
+        default: prod
+        type: choice
+        options:
+          - prod
+          - dev
 
 jobs:
   notify:
+    if: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.actor == 'ngthuongdoan') }}
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # …checkout, setup, install…
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
+      - name: Set mailing list based on environment input
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "dev" ]; then
+            echo "EMAIL_LIST_NAME=dev-users" >> $GITHUB_ENV
+          else
+            echo "EMAIL_LIST_NAME=daily-free-games" >> $GITHUB_ENV
+          fi
 
       - name: Run free games notifier
         run: npm start
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          # …other SMTP and app variables…
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
-          # Recipients for the notifier are configured via JSON (see src/data/email-lists.json).
-          # Remove the EMAIL_TO secret; the application uses default recipient lists.
-          STARTUP_DELAY_MS: "0"
-          REQUEST_TIMEOUT_MS: "30000"
-          RETRY_COUNT: "3"
-          RETRY_DELAY_MS: "5000"
