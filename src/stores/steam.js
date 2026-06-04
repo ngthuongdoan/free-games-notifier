@@ -156,9 +156,7 @@ async function fetchSteamFreeGames() {
     }));
 }
 
-async function fetchSteamDiscountGames() {
-  const deals = await fetchSteamDeals();
-
+function selectSteamDiscountGames(deals, maxPriceVnd = STEAM_MAX_PRICE_VND) {
   return deals
     .filter((game) => {
       return (
@@ -166,7 +164,7 @@ async function fetchSteamDiscountGames() {
         game.discountPercent < 100 &&
         typeof game.discountPrice === "number" &&
         game.discountPrice > 0 &&
-        game.discountPrice <= STEAM_MAX_PRICE_VND
+        game.discountPrice <= maxPriceVnd
       );
     })
     .sort((a, b) => {
@@ -183,10 +181,16 @@ async function fetchSteamDiscountGames() {
     }));
 }
 
+async function fetchSteamDiscountGames(maxPriceVnd = STEAM_MAX_PRICE_VND) {
+  const deals = await fetchSteamDeals();
+  return selectSteamDiscountGames(deals, maxPriceVnd);
+}
+
 module.exports = {
   fetchSteamDeals,
   fetchSteamFreeGames,
   fetchSteamDiscountGames,
+  selectSteamDiscountGames,
   normalizeSteamPrice,
   parseSteamSearchRows,
 };

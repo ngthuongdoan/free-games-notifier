@@ -6,6 +6,9 @@ const path = require("path");
 // arrays of recipient email addresses. See `src/data/email-lists.json` for
 // an example of the structure.
 const EMAIL_LIST_PATH = path.join(__dirname, "data", "email-lists.json");
+const DEFAULT_STEAM_MAX_PRICE_VND = Number(
+  process.env.STEAM_MAX_PRICE_VND || 200000
+);
 
 /**
  * Load all configured email lists from the JSON file. The file is
@@ -18,6 +21,50 @@ const EMAIL_LIST_PATH = path.join(__dirname, "data", "email-lists.json");
 async function getEmailLists() {
   const raw = await fs.readFile(EMAIL_LIST_PATH, "utf8");
   return JSON.parse(raw);
+}
+
+function normalizeRecipientEntry(entry) {
+  if (typeof entry === "string") {
+    return {
+      email: entry,
+      steamMaxPriceVnd: DEFAULT_STEAM_MAX_PRICE_VND,
+    };
+  }
+
+  if (
+    !entry ||
+    typeof entry !== "object" ||
+    typeof entry.email !== "string" ||
+    entry.email.trim() === ""
+  ) {
+    throw new Error("Recipient entry must be an email string or object with an email field");
+  }
+
+  const normalized = {
+    email: entry.email.trim(),
+  };
+
+  if (entry.steamMaxPriceVnd !== undefined) {
+    const steamMaxPriceVnd = Number(entry.steamMaxPriceVnd);
+
+    if (!Number.isFinite(steamMaxPriceVnd) || steamMaxPriceVnd <= 0) {
+      throw new Error(
+        `Recipient "${normalized.email}" has an invalid steamMaxPriceVnd value`
+      );
+    }
+
+    normalized.steamMaxPriceVnd = steamMaxPriceVnd;
+  } else {
+    normalized.steamMaxPriceVnd = DEFAULT_STEAM_MAX_PRICE_VND;
+  }
+
+  return normalized;
+}
+
+function getMaxSteamPriceVnd(recipients) {
+  return recipients.reduce((max, recipient) => {
+    return Math.max(max, recipient.steamMaxPriceVnd || DEFAULT_STEAM_MAX_PRICE_VND);
+  }, DEFAULT_STEAM_MAX_PRICE_VND);
 }
 
 /**
@@ -40,7 +87,15 @@ async function getRecipientsByListName(listName) {
   return recipients;
 }
 
+async function getRecipientEntriesByListName(listName) {
+  const recipients = await getRecipientsByListName(listName);
+  return recipients.map(normalizeRecipientEntry);
+}
+
 module.exports = {
   getEmailLists,
   getRecipientsByListName,
+  getRecipientEntriesByListName,
+  normalizeRecipientEntry,
+  getMaxSteamPriceVnd,
 };

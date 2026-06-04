@@ -1,7 +1,11 @@
 require("dotenv").config();
 
-const { STARTUP_DELAY_MS, STEAM_MAX_PRICE_VND } = require("./src/config");
+const { STARTUP_DELAY_MS } = require("./src/config");
 const { sendEmail, sendFailureEmail } = require("./src/email");
+const {
+  getMaxSteamPriceVnd,
+  getRecipientEntriesByListName,
+} = require("./src/emailListService");
 const { formatVnd } = require("./src/format");
 const { fetchEpicFreeGames } = require("./src/stores/epic");
 const {
@@ -10,6 +14,8 @@ const {
 } = require("./src/stores/steam");
 const { sleep, withRetry, stripWrappingQuotes } = require("./src/utils");
 const { normalizeEmailAddress } = require("./src/email");
+const DEFAULT_LIST_NAME =
+  process.env.EMAIL_LIST_NAME || "daily-free-games";
 
 async function main() {
   if (STARTUP_DELAY_MS > 0) {
@@ -17,14 +23,19 @@ async function main() {
     await sleep(STARTUP_DELAY_MS);
   }
 
+  const recipients = await getRecipientEntriesByListName(DEFAULT_LIST_NAME);
+  const maxSteamPriceVnd = getMaxSteamPriceVnd(recipients);
+
   console.log("Fetching Epic free games...");
   const epicGames = await fetchEpicFreeGames();
 
   console.log("Fetching Steam free games...");
   const steamGames = await fetchSteamFreeGames();
 
-  console.log(`Fetching Steam discounts under ${formatVnd(STEAM_MAX_PRICE_VND)}...`);
-  const steamDiscountGames = await fetchSteamDiscountGames();
+  console.log(
+    `Fetching Steam discounts up to recipient max ${formatVnd(maxSteamPriceVnd)}...`
+  );
+  const steamDiscountGames = await fetchSteamDiscountGames(maxSteamPriceVnd);
 
   console.log(`Epic free games found: ${epicGames.length}`);
   console.log(`Steam free games found: ${steamGames.length}`);

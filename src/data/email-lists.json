@@ -1,7 +1,13 @@
 {
   "daily-free-games": [
-    "dthitk@gmail.com",
-    "ngthuongdoan@gmail.com"
+    {
+      "email": "dthitk@gmail.com",
+      "steamMaxPriceVnd": 100000
+    },
+    {
+      "email": "ngthuongdoan@gmail.com",
+      "steamMaxPriceVnd": 200000
+    }
   ],
   "weekly-summary": [
   ],

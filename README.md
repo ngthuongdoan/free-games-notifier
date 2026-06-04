@@ -12,6 +12,7 @@ Sends HTML and plain‑text email notifications with detailed information about 
 Supports multiple mailing lists via a JSON file. Default lists include:
 daily-free-games – receives daily updates about free games and discounts.
 admin-alerts – receives notifications if the job fails.
+Supports per-user Steam price caps so each subscriber only receives deals within their configured budget.
 Configurable through environment variables for SMTP settings, price thresholds, retry behaviour, and more.
 Includes a GitHub Actions workflow to run the notifier on a schedule (daily at 02:00 UTC by default) or manually.
 Setup and Installation
@@ -44,13 +45,22 @@ Edit the email lists in src/data/email-lists.json to add or remove recipients. F
 
 {
   "daily-free-games": [
-    "alice@example.com",
-    "bob@example.com"
+    {
+      "email": "alice@example.com",
+      "steamMaxPriceVnd": 100000
+    },
+    {
+      "email": "bob@example.com",
+      "steamMaxPriceVnd": 250000
+    },
+    "carol@example.com"
   ],
   "admin-alerts": [
     "admin@example.com"
   ]
 }
+
+String recipients still work and will use the default STEAM_MAX_PRICE_VND value. Object recipients can override that limit per user with steamMaxPriceVnd.
 
 You can add more lists and update their names; the notifier defaults to daily-free-games for regular notifications and admin-alerts for error alerts.
 
@@ -65,7 +75,7 @@ The application will:
 Optionally wait for a startup delay (STARTUP_DELAY_MS) if set.
 Fetch free games from Epic and free/discounted games from Steam.
 Generate HTML and plain‑text emails using an EJS template (template.ejs).
-Deliver the email to recipients listed under daily-free-games.
+Deliver personalized emails to recipients listed under daily-free-games, using each recipient's Steam price limit.
 If an error occurs, send an error email to recipients listed under admin-alerts.
 Scheduled Execution via GitHub Actions
 
@@ -84,7 +94,7 @@ Several environment variables can be used to control behaviour:
 STARTUP_DELAY_MS – delay before the job starts (default 0).
 REQUEST_TIMEOUT_MS – HTTP request timeout in milliseconds (default 30000).
 RETRY_COUNT and RETRY_DELAY_MS – number of retries and delay between retries when sending email fails (defaults: 3 retries, 5000 ms delay).
-STEAM_MAX_PRICE_VND – maximum price (VND) for Steam deals to be considered (default 200000).
+STEAM_MAX_PRICE_VND – default maximum price (VND) for Steam deals when a recipient does not define steamMaxPriceVnd (default 200000).
 STEAM_DISCOUNT_LIMIT – maximum number of Steam deals to include (default 30).
 EMAIL_LIST_NAME – override the default list used for regular notifications.
 ADMIN_EMAIL_LIST_NAME – override the default list used for error notifications.

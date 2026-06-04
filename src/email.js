@@ -5,11 +5,15 @@ const path = require("path");
 const { STEAM_MAX_PRICE_VND } = require("./config");
 const { formatDate, formatPrice, formatVnd } = require("./format");
 const { stripWrappingQuotes } = require("./utils");
+const { selectSteamDiscountGames } = require("./stores/steam");
 
 // Import the email list service to support dynamic recipient groups. This allows
 // us to send notifications to different groups of users based on the type of
 // notification being sent.
-const { getRecipientsByListName } = require("./emailListService");
+const {
+  getRecipientsByListName,
+  getRecipientEntriesByListName,
+} = require("./emailListService");
 
 // Default list names used when no environment variable overrides are provided.
 // EMAIL_LIST_NAME controls who receives regular game update notifications.
@@ -72,13 +76,14 @@ async function createEmailHtml({
   steamGames,
   steamDiscountGames,
   checkedAt,
+  steamMaxPriceVnd = STEAM_MAX_PRICE_VND,
 }) {
   return ejs.renderFile(path.join(__dirname, "..", "template.ejs"), {
     epicGames,
     steamGames,
     steamDiscountGames,
     checkedAt,
-    steamMaxPriceVnd: STEAM_MAX_PRICE_VND,
+    steamMaxPriceVnd,
     formatDate,
     formatPrice,
     formatVnd,
@@ -90,6 +95,7 @@ function createEmailText({
   steamGames,
   steamDiscountGames,
   checkedAt,
+  steamMaxPriceVnd = STEAM_MAX_PRICE_VND,
 }) {
   const freeGames = [...epicGames, ...steamGames];
 
@@ -99,7 +105,7 @@ function createEmailText({
     "",
     `Epic free games: ${epicGames.length}`,
     `Steam free games: ${steamGames.length}`,
-    `Steam discounts under ${formatVnd(STEAM_MAX_PRICE_VND)}: ${steamDiscountGames.length}`,
+    `Steam discounts under ${formatVnd(steamMaxPriceVnd)}: ${steamDiscountGames.length}`,
     "",
     "Free Games:",
     freeGames.length === 0
@@ -116,7 +122,7 @@ function createEmailText({
           )
           .join("\n"),
     "",
-    `Steam Discounts Under ${formatVnd(STEAM_MAX_PRICE_VND)}:`,
+    `Steam Discounts Under ${formatVnd(steamMaxPriceVnd)}:`,
     steamDiscountGames.length === 0
       ? "No matching Steam discounted games found."
       : steamDiscountGames
@@ -134,6 +140,13 @@ function createEmailText({
   ].join("\n");
 }
 
+function selectSteamDiscountGamesForRecipient(steamDiscountGames, recipient) {
+  return selectSteamDiscountGames(
+    steamDiscountGames,
+    recipient.steamMaxPriceVnd || STEAM_MAX_PRICE_VND
+  );
+}
+
 async function sendEmail({ epicGames, steamGames, steamDiscountGames }) {
   const checkedAt = new Date().toLocaleString("vi-VN", {
     timeZone: "Asia/Ho_Chi_Minh",
@@ -147,35 +160,42 @@ async function sendEmail({ epicGames, steamGames, steamDiscountGames }) {
     process.env.SMTP_USER
   );
 
-  const subject = `Games Update: Epic Free ${epicGames.length}, Steam Free ${steamGames.length}, Deals ${steamDiscountGames.length}`;
-
-  const html = await createEmailHtml({
-    epicGames,
-    steamGames,
-    steamDiscountGames,
-    checkedAt,
-  });
-
   // Look up the list of recipients for regular game updates. This makes it
   // possible to manage subscriber groups via a simple JSON configuration.
-  const recipients = await getRecipientsByListName(DEFAULT_LIST_NAME);
+  const recipients = await getRecipientEntriesByListName(DEFAULT_LIST_NAME);
 
-  await transporter.sendMail({
-    from: sender.headerFrom,
-    envelope: {
-      from: sender.envelopeFrom,
-      to: recipients,
-    },
-    to: recipients,
-    subject,
-    text: createEmailText({
+  for (const recipient of recipients) {
+    const recipientSteamDiscountGames = selectSteamDiscountGamesForRecipient(
+      steamDiscountGames,
+      recipient
+    );
+    const subject = `Games Update: Epic Free ${epicGames.length}, Steam Free ${steamGames.length}, Deals ${recipientSteamDiscountGames.length}`;
+    const html = await createEmailHtml({
       epicGames,
       steamGames,
-      steamDiscountGames,
+      steamDiscountGames: recipientSteamDiscountGames,
       checkedAt,
-    }),
-    html,
-  });
+      steamMaxPriceVnd: recipient.steamMaxPriceVnd,
+    });
+
+    await transporter.sendMail({
+      from: sender.headerFrom,
+      envelope: {
+        from: sender.envelopeFrom,
+        to: [recipient.email],
+      },
+      to: recipient.email,
+      subject,
+      text: createEmailText({
+        epicGames,
+        steamGames,
+        steamDiscountGames: recipientSteamDiscountGames,
+        checkedAt,
+        steamMaxPriceVnd: recipient.steamMaxPriceVnd,
+      }),
+      html,
+    });
+  }
 }
 
 async function sendFailureEmail(error) {
@@ -206,6 +226,7 @@ module.exports = {
   createTransporter,
   createEmailHtml,
   createEmailText,
+  selectSteamDiscountGamesForRecipient,
   sendEmail,
   sendFailureEmail,
 };
