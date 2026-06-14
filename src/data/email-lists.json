@@ -3,10 +3,13 @@
     {
       "email": "ngthuongdoan@gmail.com",
       "steamMaxPriceVnd": 200000
+    },
+    {
+      "email": "demo@example.com",
+      "steamMaxPriceVnd": 200000
     }
   ],
-  "weekly-summary": [
-  ],
+  "weekly-summary": [],
   "admin-alerts": [
     "contact@thuongda.dev"
   ],
