@@ -6,6 +6,10 @@
     }
   ],
   "weekly-summary": [
+    {
+      "email": "codex-render-smoke@example.com",
+      "steamMaxPriceVnd": 210000
+    }
   ],
   "admin-alerts": [
     "contact@thuongda.dev"
