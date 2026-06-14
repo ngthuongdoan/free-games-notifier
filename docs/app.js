@@ -31,7 +31,7 @@
   function setSubmitting(isSubmitting) {
     submitButton.disabled = isSubmitting;
     submitButton.textContent = isSubmitting
-      ? "Sending registration..."
+      ? "Sending..."
       : "Send my registration";
   }
 
@@ -188,13 +188,13 @@
       } else {
         showFallback(
           payload,
-          "No registration endpoint is configured for this GitHub Pages site."
+          "Signups are temporarily unavailable."
         );
       }
     } catch (error) {
       showFallback(
         payload,
-        `The registration endpoint could not be reached. ${escapeHtml(error.message)}`
+        "We could not send your signup right now."
       );
     } finally {
       setSubmitting(false);

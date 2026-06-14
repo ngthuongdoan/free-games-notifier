@@ -1,6 +1,6 @@
 window.FGN_CONFIG = {
   registration: {
-    endpoint: "",
+    endpoint: "https://free-games-registration-endpoint.onrender.com/register",
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -8,6 +8,6 @@ window.FGN_CONFIG = {
     defaultListName: "daily-free-games",
     fallbackEmail: "contact@thuongda.dev",
     githubIssueUrl: "https://github.com/ngthuongdoan/free-games-notifier/issues/new",
-    successMessage: "Registration request sent successfully. A GitHub Action can now create a PR for review."
+    successMessage: "Thanks. Your signup request has been sent."
   }
 };
