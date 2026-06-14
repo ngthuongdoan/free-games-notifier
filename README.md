@@ -15,6 +15,7 @@ admin-alerts – receives notifications if the job fails.
 Supports per-user Steam price caps so each subscriber only receives deals within their configured budget.
 Configurable through environment variables for SMTP settings, price thresholds, retry behaviour, and more.
 Includes a GitHub Actions workflow to run the notifier on a schedule (daily at 02:00 UTC by default) or manually.
+Includes a GitHub Pages-ready registration UI in `docs/` that collects subscriber email addresses and per-user Steam price limits.
 Setup and Installation
 
 Clone the repository and install dependencies:
@@ -63,6 +64,32 @@ Edit the email lists in src/data/email-lists.json to add or remove recipients. F
 String recipients still work and will use the default STEAM_MAX_PRICE_VND value. Object recipients can override that limit per user with steamMaxPriceVnd.
 
 You can add more lists and update their names; the notifier defaults to daily-free-games for regular notifications and admin-alerts for error alerts.
+
+GitHub Pages Registration UI
+
+The `docs/` directory now contains a static registration site intended for GitHub Pages. It captures:
+
+- subscriber email
+- per-user `steamMaxPriceVnd`
+- target list name
+
+Important: GitHub Pages cannot directly update `src/data/email-lists.json`. The form is therefore designed to submit JSON to a separate registration endpoint that you configure in `docs/site-config.js`.
+That endpoint can trigger a `repository_dispatch` event, and this repo can turn that event into an automated PR that updates the subscriber registry.
+
+Expected payload:
+
+```json
+{
+  "email": "player@example.com",
+  "steamMaxPriceVnd": 200000,
+  "listName": "daily-free-games",
+  "source": "github-pages"
+}
+```
+
+If no endpoint is configured yet, the page falls back to a prefilled GitHub issue or email flow so registration requests are still captured.
+
+See `docs/README.md` for setup details.
 
 Running Locally
 

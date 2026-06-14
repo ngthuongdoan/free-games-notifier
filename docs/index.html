@@ -3,81 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subscribe to Free Games Notifier</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f8f9fa;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      background-color: #ffffff;
-      padding: 20px 40px;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      max-width: 500px;
-      width: 100%;
-    }
-    h1 {
-      margin-top: 0;
-      color: #343a40;
-    }
-    p {
-      color: #6c757d;
-      line-height: 1.6;
-    }
-    input[type="email"] {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ced4da;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 4px;
-      background-color: #007bff;
-      color: #ffffff;
-      font-size: 16px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .note {
-      margin-top: 20px;
-      font-size: 14px;
-      color: #495057;
-    }
-  </style>
+  <title>Free Games Notifier</title>
+  <meta
+    name="description"
+    content="Sign up for Free Games Notifier with your email and personal Steam price limit."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Subscribe to Free Games Notifier</h1>
-    <p>Enter your email address to receive notifications whenever we find free or discounted games. Your email will be added to our subscribers list.</p>
-    <!--
-      This form uses the mailto scheme to send a subscription request to the repository owner.
-      Replace the "your.email@example.com" below with your own email address.
-      When a user submits this form, their email client will open a new message to your address
-      with their subscription request, so you can manually add them to the JSON file.
-    -->
-    <form action="mailto:your.email@example.com?subject=Free%20Games%20Notifier%20Subscription" method="post" enctype="text/plain">
-      <input type="email" name="email" placeholder="Your email address" required>
-      <button type="submit">Subscribe</button>
-    </form>
-    <div class="note">
-      <p>If the form doesn't open your email client, please send an email directly to <strong>your.email@example.com</strong> with the subject <em>Free Games Notifier Subscription</em> and include your email address in the body.</p>
-      <p><strong>Privacy:</strong> We do not share your email address with third parties. It will only be used for game notifications.</p>
-    </div>
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Free Games Notifier home">
+        <span class="brand-mark" aria-hidden="true">FG</span>
+        <span class="brand-text">Free Games Notifier</span>
+      </a>
+      <nav class="header-links" aria-label="Primary">
+        <a
+          href="https://github.com/ngthuongdoan/free-games-notifier"
+          target="_blank"
+          rel="noreferrer"
+        >
+          View on GitHub
+        </a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="form-layout" id="register">
+        <section class="signup-card" aria-labelledby="register-title">
+          <div class="card-header">
+            <p class="eyebrow">Registration</p>
+            <h1 id="register-title">Sign up for free game alerts</h1>
+            <p>
+              Add your email and Steam price limit. We will use your budget cap
+              to filter Steam deals before sending notifications.
+            </p>
+          </div>
+
+          <form id="registration-form" novalidate>
+            <label class="field">
+              <span>Email address</span>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                placeholder="you@example.com"
+                required
+              >
+            </label>
+
+            <label class="field">
+              <span>Steam price limit (VND)</span>
+              <input
+                id="steamMaxPriceVnd"
+                name="steamMaxPriceVnd"
+                type="number"
+                inputmode="numeric"
+                min="1000"
+                step="1000"
+                placeholder="200000"
+                required
+              >
+            </label>
+
+            <label class="field">
+              <span>Subscriber list</span>
+              <select id="listName" name="listName">
+                <option value="daily-free-games">daily-free-games</option>
+                <option value="weekly-summary">weekly-summary</option>
+              </select>
+            </label>
+
+            <button class="primary-button" type="submit">Send my registration</button>
+          </form>
+
+          <div id="form-status" class="form-status" aria-live="polite"></div>
+
+          <div class="card-note">
+            <strong>Note:</strong> GitHub Pages should send this form to an
+            endpoint that triggers a <code>repository_dispatch</code> event,
+            and GitHub Actions can open a PR that updates
+            <code>src/data/email-lists.json</code>.
+          </div>
+        </section>
+      </section>
+    </main>
   </div>
+
+  <script src="./site-config.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>

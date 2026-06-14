@@ -1,0 +1,65 @@
+name: Subscriber Registration PR
+
+on:
+  repository_dispatch:
+    types:
+      - register-subscriber
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-registration-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate repository dispatch payload
+        env:
+          CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          node -e "const payload = JSON.parse(process.env.CLIENT_PAYLOAD); if (!payload.email || !payload.listName || !payload.steamMaxPriceVnd) { throw new Error('Missing required client_payload fields: email, listName, steamMaxPriceVnd'); }"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply subscriber registration
+        env:
+          REGISTRATION_EMAIL: ${{ github.event.client_payload.email }}
+          REGISTRATION_LIST_NAME: ${{ github.event.client_payload.listName }}
+          REGISTRATION_STEAM_MAX_PRICE_VND: ${{ github.event.client_payload.steamMaxPriceVnd }}
+        run: node scripts/apply-subscriber-registration.js
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add subscriber registration for ${{ github.event.client_payload.email }}"
+          branch: "codex/subscriber-${{ github.event.client_payload.listName }}-${{ github.run_id }}"
+          delete-branch: true
+          title: "Add subscriber: ${{ github.event.client_payload.email }}"
+          body: |
+            This PR was created automatically from a GitHub Pages registration request.
+
+            Registration payload:
+            - Email: `${{ github.event.client_payload.email }}`
+            - List: `${{ github.event.client_payload.listName }}`
+            - Steam price limit (VND): `${{ github.event.client_payload.steamMaxPriceVnd }}`
+            - Source: `${{ github.event.client_payload.source || 'repository-dispatch' }}`
+
+            Workflow:
+            - Event: `repository_dispatch`
+            - Type: `register-subscriber`
+
+          author: "Free Games Notifier Bot <contact@thuongda.dev>"
+          committer: "Free Games Notifier Bot <contact@thuongda.dev>"
+          add-paths: |
+            src/data/email-lists.json

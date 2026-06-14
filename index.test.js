@@ -7,6 +7,10 @@ const {
   getMaxSteamPriceVnd,
 } = require("./src/emailListService");
 const {
+  normalizeRegistrationPayload,
+  upsertSubscriberInLists,
+} = require("./src/subscriberRegistry");
+const {
   createEmailText,
   selectSteamDiscountGamesForRecipient,
 } = require("./src/email");
@@ -122,4 +126,88 @@ test("normalizeEmailAddress falls back to SMTP user", () => {
       envelopeFrom: "contact@thuongda.dev",
     }
   );
+});
+
+test("normalizeRegistrationPayload normalizes email and validates fields", () => {
+  assert.deepEqual(
+    normalizeRegistrationPayload({
+      email: " Player@Example.com ",
+      listName: "daily-free-games",
+      steamMaxPriceVnd: "250000",
+    }),
+    {
+      email: "player@example.com",
+      listName: "daily-free-games",
+      steamMaxPriceVnd: 250000,
+    }
+  );
+});
+
+test("upsertSubscriberInLists adds a new subscriber object", () => {
+  const result = upsertSubscriberInLists(
+    {
+      "daily-free-games": [],
+      "admin-alerts": ["admin@example.com"],
+    },
+    {
+      email: "player@example.com",
+      listName: "daily-free-games",
+      steamMaxPriceVnd: 180000,
+    }
+  );
+
+  assert.equal(result.changed, true);
+  assert.equal(result.action, "created");
+  assert.deepEqual(result.lists["daily-free-games"], [
+    {
+      email: "player@example.com",
+      steamMaxPriceVnd: 180000,
+    },
+  ]);
+});
+
+test("upsertSubscriberInLists updates an existing subscriber limit", () => {
+  const result = upsertSubscriberInLists(
+    {
+      "daily-free-games": [
+        {
+          email: "player@example.com",
+          steamMaxPriceVnd: 120000,
+        },
+      ],
+    },
+    {
+      email: "player@example.com",
+      listName: "daily-free-games",
+      steamMaxPriceVnd: 200000,
+    }
+  );
+
+  assert.equal(result.changed, true);
+  assert.equal(result.action, "updated");
+  assert.equal(
+    result.lists["daily-free-games"][0].steamMaxPriceVnd,
+    200000
+  );
+});
+
+test("upsertSubscriberInLists keeps existing entries when nothing changed", () => {
+  const result = upsertSubscriberInLists(
+    {
+      "daily-free-games": [
+        {
+          email: "player@example.com",
+          steamMaxPriceVnd: 200000,
+        },
+      ],
+    },
+    {
+      email: "player@example.com",
+      listName: "daily-free-games",
+      steamMaxPriceVnd: 200000,
+    }
+  );
+
+  assert.equal(result.changed, false);
+  assert.equal(result.action, "noop");
 });
