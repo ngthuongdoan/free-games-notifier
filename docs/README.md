@@ -89,3 +89,12 @@ If no endpoint is configured, or the endpoint fails, the page offers:
 - a prefilled email
 
 That keeps the UI usable while you finish the backend registration flow.
+
+## Manual Pages redeploy
+
+This repo also includes `.github/workflows/redeploy-github-pages.yml`.
+
+Use it from the GitHub Actions tab with `Run workflow` when you want to force a
+GitHub Pages rebuild without editing the page manually. The workflow updates
+`docs/deploy.json`, commits that change, and pushes it back to the default
+branch so Pages rebuilds.
