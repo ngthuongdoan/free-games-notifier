@@ -91,6 +91,11 @@ If no endpoint is configured yet, the page falls back to a prefilled GitHub issu
 
 See `docs/README.md` for setup details.
 
+For a hosted endpoint, this repo includes a small Render-ready Node service in
+`render-registration-service/`. It accepts form submissions, triggers
+`repository_dispatch`, and lets GitHub Actions open a PR that updates
+`src/data/email-lists.json`.
+
 Running Locally
 
 Once configured, run the notifier manually from your terminal:

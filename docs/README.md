@@ -48,6 +48,21 @@ window.FGN_CONFIG = {
 };
 ```
 
+For this repo, the recommended target is the Render web service included in
+`render-registration-service/`, for example:
+
+```js
+window.FGN_CONFIG = {
+  registration: {
+    endpoint: "https://free-games-registration-endpoint.onrender.com/register",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }
+};
+```
+
 Examples of good targets:
 
 - a serverless function on Vercel, Netlify, or Cloudflare
@@ -80,6 +95,27 @@ The workflow:
 1. validates the payload
 2. updates `src/data/email-lists.json`
 3. creates a PR with the subscriber change
+
+## Render deployment
+
+This repo also includes a Render-ready service in `render-registration-service/`
+and a root `render.yaml`.
+
+Service summary:
+
+- runtime: Node
+- root directory: `render-registration-service`
+- health check: `/healthz`
+- public endpoint: `POST /register`
+
+Required secrets in Render:
+
+- `GITHUB_TOKEN`
+- `ALLOWED_ORIGIN`
+
+Suggested `ALLOWED_ORIGIN` value:
+
+- your GitHub Pages site origin, such as `https://ngthuongdoan.github.io`
 
 ## Current fallback behavior
 

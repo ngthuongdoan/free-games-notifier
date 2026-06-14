@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: free-games-registration-endpoint
+    runtime: node
+    plan: free
+    rootDir: render-registration-service
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GITHUB_OWNER
+        value: ngthuongdoan
+      - key: GITHUB_REPO
+        value: free-games-notifier
+      - key: GITHUB_EVENT_TYPE
+        value: register-subscriber
+      - key: ALLOWED_ORIGIN
+        sync: false
